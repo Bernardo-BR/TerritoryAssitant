@@ -41,20 +41,6 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.2);
             white-space: nowrap;
         }
-        @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(0, 123, 255, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
-        }
-        .user-location-marker {
-            background-color: #007bff;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            border: 3px solid #fff;
-            box-shadow: 0 0 5px rgba(0,0,0,0.5);
-            animation: pulse 2s infinite;
-        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -67,7 +53,14 @@
                 <a href="dashboard.html" title="Voltar para o Dashboard">
                     <img src="https://i.ibb.co/8gwxJtRG/SUNRISE-1.png" alt="SUNRISE Logo" class="h-10 sm:h-12 w-auto">
                 </a>
-                <h2 id="current-date-header" class="text-base sm:text-xl font-semibold text-gray-700 text-right"></h2>
+                <div class="flex items-center gap-4">
+                    <h2 id="current-date-header" class="text-base sm:text-xl font-semibold text-gray-700 text-right"></h2>
+                    <button id="change-location-btn" class="hidden p-2 rounded-full bg-white shadow hover:bg-gray-100 transition-colors" title="Trocar Local de Saída">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -93,6 +86,7 @@
     <!-- Modals -->
     <div id="location-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 hidden"></div>
     <div id="confirm-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 hidden"></div>
+    <div id="password-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 hidden"></div>
     <div id="alert-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 hidden"></div>
 
     <!-- Tela de Carregamento -->
@@ -103,6 +97,7 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, doc, updateDoc, query, where, getDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore.js";
 
         // --- Configuração do Firebase ---
@@ -118,21 +113,26 @@
 
         // --- Inicialização ---
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
 
         // --- Variáveis Globais ---
         let map;
         let mapLayers = new L.FeatureGroup();
         let assignmentsForLocation = [];
+        let allAssignmentsForDay = [];
         let currentAssignmentIndex = -1;
         let activeAssignment = null;
+        let allLocationsForDay = [];
 
         const locationModalEl = document.getElementById('location-modal');
         const confirmModalEl = document.getElementById('confirm-modal');
+        const passwordModalEl = document.getElementById('password-modal');
         const alertModalEl = document.getElementById('alert-modal');
         const statusBtn = document.getElementById('status-btn');
         const noMapsMessage = document.getElementById('no-maps-message');
         const mapContainer = document.getElementById('map-container');
+        const changeLocationBtn = document.getElementById('change-location-btn');
 
         // --- Funções de Data e UI ---
         function getWeekStartDate(d) {
@@ -167,21 +167,24 @@
             });
         }
 
-        function showConfirmModal(message, onConfirm) {
-            confirmModalEl.innerHTML = `
+        function showPasswordConfirmModal(onConfirm) {
+            passwordModalEl.innerHTML = `
                 <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm modal-content">
-                    <p class="text-center text-gray-700">${message}</p>
+                    <h3 class="text-lg font-semibold mb-4">Confirmar Conclusão</h3>
+                    <p class="text-sm text-gray-600 mb-4">Para confirmar que o mapa foi concluído, por favor, insira sua senha.</p>
+                    <input type="password" id="password-confirm-input" class="w-full border border-gray-300 p-2 rounded-md" placeholder="Sua Senha">
                     <div class="flex justify-end gap-3 mt-6">
-                        <button id="confirm-modal-cancel" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancelar</button>
-                        <button id="confirm-modal-confirm" class="px-4 py-2 bg-blue-500 text-white rounded-md">Confirmar</button>
+                        <button id="password-cancel-btn" class="px-4 py-2 bg-gray-200 rounded-md">Cancelar</button>
+                        <button id="password-confirm-btn" class="px-4 py-2 bg-blue-500 text-white rounded-md">Confirmar</button>
                     </div>
                 </div>
             `;
-            confirmModalEl.classList.remove('hidden');
-            document.getElementById('confirm-modal-cancel').onclick = () => confirmModalEl.classList.add('hidden');
-            document.getElementById('confirm-modal-confirm').onclick = () => {
-                onConfirm();
-                confirmModalEl.classList.add('hidden');
+            passwordModalEl.classList.remove('hidden');
+
+            document.getElementById('password-cancel-btn').onclick = () => passwordModalEl.classList.add('hidden');
+            document.getElementById('password-confirm-btn').onclick = () => {
+                const password = document.getElementById('password-confirm-input').value;
+                onConfirm(password);
             };
         }
 
@@ -256,6 +259,12 @@
             if (!activeAssignment) return;
 
             const currentStatus = activeAssignment.status || 'pendente';
+            const user = auth.currentUser;
+
+            if (!user) {
+                showAlert("Erro de autenticação. Por favor, faça login novamente.");
+                return;
+            }
 
             if (currentStatus === 'pendente') {
                 const newStatus = 'trabalhando';
@@ -264,17 +273,40 @@
                 activeAssignment.status = newStatus;
                 updateStatusButton(newStatus);
             } else if (currentStatus === 'trabalhando') {
-                showConfirmModal("Deseja realmente concluir este mapa?", async () => {
-                    const newStatus = 'concluido';
-                    const assignmentRef = doc(db, "assignments", activeAssignment.id);
-                    await updateDoc(assignmentRef, { 
-                        status: newStatus,
-                        completedAt: new Date()
-                    });
-                    displayNextMap();
+                showPasswordConfirmModal(async (password) => {
+                    if (!password) {
+                        showAlert("A senha é obrigatória para confirmar.");
+                        return;
+                    }
+                    try {
+                        const credential = EmailAuthProvider.credential(user.email, password);
+                        await reauthenticateWithCredential(user, credential);
+                        
+                        passwordModalEl.classList.add('hidden');
+                        const newStatus = 'concluido';
+                        const assignmentRef = doc(db, "assignments", activeAssignment.id);
+                        await updateDoc(assignmentRef, { 
+                            status: newStatus,
+                            completedAt: new Date()
+                        });
+                        displayNextMap();
+
+                    } catch (error) {
+                        console.error("Erro de reautenticação:", error);
+                        showAlert("Senha incorreta. A conclusão do mapa foi cancelada.");
+                    }
                 });
             }
         }
+
+        const startWithLocation = (location) => {
+            assignmentsForLocation = allAssignmentsForDay
+                .filter(a => a.location === location && a.status !== 'concluido' && a.territoryId)
+                .sort((a,b) => a.assignedAt.seconds - b.assignedAt.seconds);
+            
+            currentAssignmentIndex = -1;
+            displayNextMap();
+        };
 
         // --- Lógica de Inicialização ---
         async function start() {
@@ -304,7 +336,7 @@
             );
             
             const snapshot = await getDocs(assignmentsQuery);
-            const allAssignmentsForDay = snapshot.docs.map(doc => {
+            allAssignmentsForDay = snapshot.docs.map(doc => {
                 const data = doc.data();
                 return { 
                     id: doc.id, 
@@ -313,29 +345,27 @@
                 };
             });
 
-            const locationsForDay = [...new Set(allAssignmentsForDay.map(a => a.location))];
+            allLocationsForDay = [...new Set(allAssignmentsForDay.map(a => a.location))];
 
             document.getElementById('loading-screen').classList.add('hidden');
 
-            if (locationsForDay.length === 0) {
+            if (allLocationsForDay.length === 0) {
                  mapContainer.classList.add('hidden');
                  statusBtn.classList.add('hidden');
                  noMapsMessage.classList.remove('hidden');
                  return;
             }
 
-            const startWithLocation = (location) => {
-                assignmentsForLocation = allAssignmentsForDay
-                    .filter(a => a.location === location && a.status !== 'concluido' && a.territoryId)
-                    .sort((a,b) => a.assignedAt.seconds - b.assignedAt.seconds);
-                
-                displayNextMap();
-            };
-
-            if (locationsForDay.length === 1) {
-                startWithLocation(locationsForDay[0]);
+            if (allLocationsForDay.length > 1) {
+                changeLocationBtn.classList.remove('hidden');
             } else {
-                showLocationModal(locationsForDay, startWithLocation);
+                changeLocationBtn.classList.add('hidden');
+            }
+
+            if (allLocationsForDay.length === 1) {
+                startWithLocation(allLocationsForDay[0]);
+            } else {
+                showLocationModal(allLocationsForDay, startWithLocation);
             }
         }
 
@@ -343,7 +373,19 @@
             initMap();
             updateHeaderDate();
             statusBtn.addEventListener('click', handleStatusClick);
-            start();
+            changeLocationBtn.addEventListener('click', () => {
+                if (allLocationsForDay.length > 1) {
+                    showLocationModal(allLocationsForDay, startWithLocation);
+                }
+            });
+
+            onAuthStateChanged(auth, (user) => {
+                if(user) {
+                    start();
+                } else {
+                    window.location.href = 'index.html';
+                }
+            });
         };
     </script>
 </body>
