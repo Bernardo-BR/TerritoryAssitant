@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Mapas do Dia - SUNRISE</title>
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Leaflet.js CSS e JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
+    <!-- Fontes -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -38,20 +41,37 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.2);
             white-space: nowrap;
         }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(0, 123, 255, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+        }
+        .user-location-marker {
+            background-color: #007bff;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            animation: pulse 2s infinite;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
 
+    <!-- Conteúdo Principal -->
     <div id="main-content" class="flex flex-col h-screen">
+        <!-- Cabeçalho -->
         <header class="bg-white shadow-md z-10">
-            <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="container mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
                 <a href="dashboard.html" title="Voltar para o Dashboard">
-                    <img src="https://i.ibb.co/8gwxJtRG/SUNRISE-1.png" alt="SUNRISE Logo" class="h-10 w-auto">
+                    <img src="https://i.ibb.co/8gwxJtRG/SUNRISE-1.png" alt="SUNRISE Logo" class="h-10 sm:h-12 w-auto">
                 </a>
-                <h2 id="current-date-header" class="text-xl font-semibold text-gray-700"></h2>
+                <h2 id="current-date-header" class="text-base sm:text-xl font-semibold text-gray-700 text-right"></h2>
             </div>
         </header>
 
+        <!-- Container do Mapa e Mensagens -->
         <main id="content-area" class="flex-1 relative">
             <div id="map-container" class="w-full h-full">
                 <div id="map" class="w-full h-full"></div>
@@ -61,24 +81,29 @@
                 <h2 class="text-2xl font-bold text-gray-600">Não há mais mapas designados, consulte o Superintendente de campo.</h2>
             </div>
 
-             <div id="status-button-container" class="absolute bottom-10 left-1/2 -translate-x-1/2 z-[1010]">
-                <button id="status-btn" class="hidden px-8 py-4 text-xl font-bold text-white rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 active:scale-95">
+             <!-- Botão de Status -->
+            <div id="status-button-container" class="absolute bottom-16 left-1/2 -translate-x-1/2 z-[1010]">
+                <button id="status-btn" class="hidden px-6 py-3 sm:px-8 sm:py-4 text-lg sm:text-xl font-bold text-white rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 active:scale-95">
                     Iniciar Mapa
                 </button>
             </div>
         </main>
     </div>
 
-    <div id="location-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
-    <div id="confirm-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
+    <!-- Modals -->
+    <div id="location-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 hidden"></div>
+    <div id="confirm-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 hidden"></div>
+    <div id="alert-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 hidden"></div>
 
+    <!-- Tela de Carregamento -->
     <div id="loading-screen" class="fixed inset-0 z-[2000] flex items-center justify-center bg-white">
         <p class="text-gray-500 text-xl font-semibold">Carregando mapas do dia...</p>
     </div>
 
+    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, updateDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, query, where, getDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore.js";
 
         // --- Configuração do Firebase ---
         const firebaseConfig = {
@@ -104,6 +129,7 @@
 
         const locationModalEl = document.getElementById('location-modal');
         const confirmModalEl = document.getElementById('confirm-modal');
+        const alertModalEl = document.getElementById('alert-modal');
         const statusBtn = document.getElementById('status-btn');
         const noMapsMessage = document.getElementById('no-maps-message');
         const mapContainer = document.getElementById('map-container');
@@ -111,10 +137,11 @@
         // --- Funções de Data e UI ---
         function getWeekStartDate(d) {
             const date = new Date(d);
-            date.setHours(0, 0, 0, 0); // Zera o horário para evitar problemas de fuso
             const day = date.getDay();
             const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-            return new Date(date.setDate(diff));
+            date.setHours(0, 0, 0, 0);
+            date.setDate(diff);
+            return date;
         }
 
         function updateHeaderDate() {
@@ -144,9 +171,9 @@
             confirmModalEl.innerHTML = `
                 <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm modal-content">
                     <p class="text-center text-gray-700">${message}</p>
-                    <div class="flex justify-end gap-3 mt-4">
-                        <button id="confirm-modal-cancel" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-transform transform hover:scale-105 active:scale-95">Cancelar</button>
-                        <button id="confirm-modal-confirm" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-transform transform hover:scale-105 active:scale-95">Confirmar</button>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button id="confirm-modal-cancel" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancelar</button>
+                        <button id="confirm-modal-confirm" class="px-4 py-2 bg-blue-500 text-white rounded-md">Confirmar</button>
                     </div>
                 </div>
             `;
@@ -156,6 +183,12 @@
                 onConfirm();
                 confirmModalEl.classList.add('hidden');
             };
+        }
+
+        function showAlert(message) {
+            alertModalEl.innerHTML = `<div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm modal-content"><p class="text-center text-gray-700">${message}</p><button id="alert-close-btn" class="mt-4 w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600">OK</button></div>`;
+            alertModalEl.classList.remove('hidden');
+            document.getElementById('alert-close-btn').onclick = () => alertModalEl.classList.add('hidden');
         }
 
         // --- Funções do Mapa ---
@@ -198,7 +231,6 @@
                     map.fitBounds(layer.getBounds().pad(0.1));
                     updateStatusButton(activeAssignment.status || 'pendente');
                 } else {
-                    console.error("Submapa não encontrado:", activeAssignment.submapId);
                     displayNextMap();
                 }
             } catch (error) {
