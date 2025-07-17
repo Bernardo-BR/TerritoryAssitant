@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Visualizador de Mapas - Tela Cheia</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet.js CSS e JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Fontes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden; /* Impede barras de rolagem */
+        }
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        /* Estilo para os rótulos dos mapas */
+        .map-label {
+            background-color: rgba(255, 255, 255, 0.85);
+            border: none;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            white-space: nowrap;
+        }
+        /* Estilo para o marcador de localização do usuário */
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 12px rgba(0, 123, 255, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+            }
+        }
+        .user-location-marker {
+            background-color: #007bff;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            animation: pulse 2s infinite;
+        }
+        .modal-backdrop { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div id="map"></div>
+
+    <!-- Botão Voltar -->
+    <div class="absolute top-4 left-4 z-[1010]">
+        <a href="dashboard.html" title="Voltar para o Dashboard" class="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+            <span class="font-semibold text-gray-700">Voltar</span>
+        </a>
+    </div>
+
+    <!-- Botão Minha Localização -->
+    <div id="location-container" class="absolute bottom-10 left-4 z-[1010]">
+        <button id="locate-btn" title="Minha Localização" class="p-3 bg-white rounded-full shadow-lg transition-transform transform hover:scale-105 active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+              <path fill-rule="evenodd" d="M.458 10C.458 4.737 4.737.458 10 .458c5.263 0 9.542 4.279 9.542 9.542s-4.279 9.542-9.542 9.542C4.737 19.542.458 15.263.458 10zM10 18a8 8 0 100-16 8 8 0 000 16z" clip-rule="evenodd" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Modal de Alerta -->
+    <div id="alert-modal" class="fixed inset-0 z-[2000] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
+
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore.js";
+
+        // --- Configuração do Firebase ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCpeqeg5OULEivfWeft_B47h2XiRtn75B8",
+            authDomain: "meu-app-de-mapas-c4d00.firebaseapp.com",
+            projectId: "meu-app-de-mapas-c4d00",
+            storageBucket: "meu-app-de-mapas-c4d00.appspot.com",
+            messagingSenderId: "544761751470",
+            appId: "1:544761751470:web:646dcfef9745bfd77b8a3f",
+            measurementId: "G-LDX3H58RT5"
+        };
+
+        // --- Inicialização ---
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- Variáveis Globais ---
+        let map;
+        const allLayers = new L.FeatureGroup();
+        let userLocationMarker = null;
+        let userLocationCoords = null;
+        const alertModalEl = document.getElementById('alert-modal');
+
+        // --- Funções de Modal ---
+        function showAlert(message) {
+            alertModalEl.innerHTML = `
+                <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-sm modal-content">
+                    <p class="text-center text-gray-700">${message}</p>
+                    <button id="alert-close-btn" class="mt-4 w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition-transform transform hover:scale-105 active:scale-95">OK</button>
+                </div>
+            `;
+            alertModalEl.classList.remove('hidden');
+            document.getElementById('alert-close-btn').onclick = () => alertModalEl.classList.add('hidden');
+        }
+
+        // --- Funções do Mapa ---
+        function initMap() {
+            const standardMapLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+            map = L.map('map', {
+                zoomControl: false 
+            }).setView([-19.9167, -43.9333], 13);
+            
+            L.control.zoom({
+                position: 'topright'
+            }).addTo(map);
+
+            standardMapLayer.addTo(map);
+            map.addLayer(allLayers);
+        }
+
+        function getStatusColor(status) {
+            switch (status) {
+                case 'concluido': return '#28a745';   // Verde
+                case 'trabalhando': return '#ffc107'; // Amarelo
+                case 'pendente':
+                case 'nao_iniciado':
+                default:
+                    return '#dc3545'; // Vermelho
+            }
+        }
+
+        async function fetchAllData() {
+            allLayers.clearLayers();
+
+            // 1. Busca todos os assignments para mapear o status mais recente de cada submapa
+            const assignmentsQuery = query(collection(db, "assignments"), orderBy("assignedAt", "desc"));
+            const assignmentsSnapshot = await getDocs(assignmentsQuery);
+            const submapStatusMap = new Map();
+            assignmentsSnapshot.forEach(doc => {
+                const assignment = doc.data();
+                if (!submapStatusMap.has(assignment.submapId)) {
+                    submapStatusMap.set(assignment.submapId, assignment.status);
+                }
+            });
+
+            // 2. Busca todos os territórios e seus submapas
+            const territoriesQuery = query(collection(db, "territories"));
+            const territoriesSnapshot = await getDocs(territoriesQuery);
+            
+            const allSubmapsPromises = [];
+            territoriesSnapshot.forEach(territoryDoc => {
+                const submapsColRef = collection(db, "territories", territoryDoc.id, "submaps");
+                allSubmapsPromises.push(getDocs(submapsColRef));
+            });
+
+            const allSubmapsSnapshots = await Promise.all(allSubmapsPromises);
+            
+            allSubmapsSnapshots.forEach(submapSnapshot => {
+                submapSnapshot.forEach(submapDoc => {
+                    const submap = { id: submapDoc.id, ...submapDoc.data() };
+                    const status = submapStatusMap.get(submap.id) || 'nao_iniciado';
+                    const color = getStatusColor(status);
+
+                    const layer = L.geoJSON(JSON.parse(submap.geoJSON), {
+                        style: { color: color, fillColor: color, weight: 2, fillOpacity: 0.7 }
+                    });
+
+                    // Adiciona o rótulo com o nome do mapa
+                    layer.bindTooltip(submap.name, {
+                        permanent: true,
+                        direction: 'center',
+                        className: 'map-label'
+                    });
+
+                    allLayers.addLayer(layer);
+                });
+            });
+
+            // Ajusta o zoom para todos os polígonos carregados
+            if (allLayers.getLayers().length > 0) {
+                map.fitBounds(allLayers.getBounds().pad(0.1));
+            }
+        }
+
+        function setupGeolocation() {
+            const locateBtn = document.getElementById('locate-btn');
+            
+            const onLocationFound = (e) => {
+                userLocationCoords = e.latlng;
+                const locationIcon = L.divIcon({
+                    className: 'user-location-marker',
+                    iconSize: [18, 18]
+                });
+
+                if (!userLocationMarker) {
+                    userLocationMarker = L.marker(e.latlng, { 
+                        icon: locationIcon,
+                        zIndexOffset: 1000 
+                    }).addTo(map);
+                } else {
+                    userLocationMarker.setLatLng(e.latlng);
+                }
+            };
+
+            const onLocationError = (e) => {
+                showAlert("Não foi possível obter sua localização. Por favor, verifique as permissões no seu navegador.");
+            };
+
+            map.locate({ setView: false, watch: true, maxZoom: 16 });
+            map.on('locationfound', onLocationFound);
+            map.on('locationerror', onLocationError);
+            
+            locateBtn.addEventListener('click', () => {
+                map.locate({ setView: true, maxZoom: 16 });
+            });
+        }
+
+        // --- Inicialização da Aplicação ---
+        window.onload = () => {
+            initMap();
+            setupGeolocation();
+            fetchAllData();
+        };
+    </script>
+</body>
+</html>

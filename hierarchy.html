@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Hierarquia - SUNRISE</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fontes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Tela de Carregamento/Verificação -->
+    <div id="auth-loading-screen" class="flex items-center justify-center h-screen">
+        <p class="text-gray-500 text-xl font-semibold">Verificando autorização...</p>
+    </div>
+
+    <!-- Conteúdo Principal (inicialmente oculto) -->
+    <div id="main-content" class="hidden">
+        <!-- Cabeçalho -->
+        <header class="bg-white shadow-md">
+            <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <a href="dashboard.html" title="Voltar para o Dashboard">
+                    <img src="https://i.ibb.co/1G7Py7TT/SUNRISE.png" alt="SUNRISE Logo" class="h-12 w-auto">
+                </a>
+                <h2 class="text-2xl font-semibold text-gray-700">Gerenciamento de Hierarquia</h2>
+            </div>
+        </header>
+
+        <!-- Lista de Usuários -->
+        <main class="container mx-auto px-6 py-12">
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <div class="border-b border-gray-200 pb-4 mb-4">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">
+                        Usuários do Sistema
+                    </h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Altere a função de cada usuário para definir suas permissões no dashboard.
+                    </p>
+                </div>
+                <div id="user-list" class="space-y-4">
+                    <!-- Usuários serão inseridos aqui -->
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Modal de Alerta -->
+    <div id="alert-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
+
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore.js";
+
+        // --- Configuração do Firebase ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCpeqeg5OULEivfWeft_B47h2XiRtn75B8",
+            authDomain: "meu-app-de-mapas-c4d00.firebaseapp.com",
+            projectId: "meu-app-de-mapas-c4d00",
+            storageBucket: "meu-app-de-mapas-c4d00.appspot.com",
+            messagingSenderId: "544761751470",
+            appId: "1:544761751470:web:646dcfef9745bfd77b8a3f",
+            measurementId: "G-LDX3H58RT5"
+        };
+
+        // --- Inicialização ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- Elementos do DOM ---
+        const mainContent = document.getElementById('main-content');
+        const loadingScreen = document.getElementById('auth-loading-screen');
+        const userListEl = document.getElementById('user-list');
+        const alertModalEl = document.getElementById('alert-modal');
+
+        // --- Lógica da Página ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Usuário está logado, buscar sua função no Firestore
+                const userDocRef = doc(db, "users", user.uid);
+                const userDoc = await getDoc(userDocRef);
+
+                if (userDoc.exists() && userDoc.data().role === 'admin') {
+                    // Usuário é admin, carregar a aplicação
+                    loadingScreen.classList.add('hidden');
+                    mainContent.classList.remove('hidden');
+                    loadUsers();
+                } else {
+                    // Usuário não é admin ou não tem função definida
+                    window.location.href = 'login.html';
+                }
+            } else {
+                // Usuário não está logado
+                window.location.href = 'login.html';
+            }
+        });
+
+        function loadUsers() {
+            const usersColRef = collection(db, "users");
+            onSnapshot(usersColRef, (snapshot) => {
+                const users = [];
+                snapshot.forEach(doc => {
+                    users.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Ordena os usuários por email no lado do cliente
+                users.sort((a, b) => (a.email || '').localeCompare(b.email || ''));
+
+                userListEl.innerHTML = ''; // Limpa a lista para renderizar novamente
+                
+                users.forEach(userData => {
+                    const userDiv = document.createElement('div');
+                    userDiv.className = 'flex items-center justify-between p-4 border-b border-gray-200 last:border-b-0';
+                    
+                    const emailDisplay = userData.email 
+                        ? `<p class="font-semibold text-gray-800">${userData.email}</p>`
+                        : `<p class="font-semibold text-red-600">Email não encontrado</p>
+                           <p class="text-xs text-red-500">Verifique o documento com ID: ${userData.id}</p>`;
+
+                    userDiv.innerHTML = `
+                        <div>
+                            ${emailDisplay}
+                        </div>
+                        <div>
+                            <select class="role-select bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" data-uid="${userData.id}">
+                                <option value="admin" ${userData.role === 'admin' ? 'selected' : ''}>Admin</option>
+                                <option value="supervisor" ${userData.role === 'supervisor' ? 'selected' : ''}>Supervisor</option>
+                                <option value="user" ${userData.role === 'user' ? 'selected' : ''}>Usuário</option>
+                            </select>
+                        </div>
+                    `;
+                    userListEl.appendChild(userDiv);
+                });
+
+                // Adiciona os event listeners para os selects
+                document.querySelectorAll('.role-select').forEach(select => {
+                    select.addEventListener('change', async (e) => {
+                        const newRole = e.target.value;
+                        const uid = e.target.dataset.uid;
+                        await updateUserRole(uid, newRole);
+                    });
+                });
+            });
+        }
+
+        async function updateUserRole(uid, role) {
+            const userDocRef = doc(db, "users", uid);
+            try {
+                await updateDoc(userDocRef, { role: role });
+                showAlert(`Função do usuário atualizada para "${role}" com sucesso!`);
+            } catch (error) {
+                console.error("Erro ao atualizar função:", error);
+                showAlert("Ocorreu um erro ao atualizar a função.");
+            }
+        }
+        
+        function showAlert(message) {
+            alertModalEl.innerHTML = `<div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm modal-content"><p class="text-center text-gray-700">${message}</p><button id="alert-close-btn" class="mt-4 w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600">OK</button></div>`;
+            alertModalEl.classList.remove('hidden');
+            document.getElementById('alert-close-btn').onclick = () => alertModalEl.classList.add('hidden');
+        }
+
+    </script>
+</body>
+</html>

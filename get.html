@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mapas do Dia - SUNRISE</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet.js CSS e JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Fontes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+        }
+        #map-container {
+            height: calc(100% - 72px); /* Altura total menos a altura do header */
+        }
+        .modal-backdrop { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease; }
+        .map-label {
+            background-color: rgba(255, 255, 255, 0.85);
+            border: none;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Conteúdo Principal -->
+    <div id="main-content" class="flex flex-col h-screen">
+        <!-- Cabeçalho -->
+        <header class="bg-white shadow-md z-10">
+            <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <a href="dashboard.html" title="Voltar para o Dashboard">
+                    <img src="https://i.ibb.co/1G7Py7TT/SUNRISE.png" alt="SUNRISE Logo" class="h-10 w-auto">
+                </a>
+                <h2 id="current-date-header" class="text-xl font-semibold text-gray-700"></h2>
+            </div>
+        </header>
+
+        <!-- Container do Mapa e Mensagens -->
+        <main id="content-area" class="flex-1 relative">
+            <div id="map-container" class="w-full h-full">
+                <div id="map" class="w-full h-full"></div>
+            </div>
+
+            <div id="no-maps-message" class="hidden w-full h-full flex items-center justify-center text-center p-4">
+                <h2 class="text-2xl font-bold text-gray-600">Não há mais mapas designados, consulte o Superintendente de campo.</h2>
+            </div>
+
+             <!-- Botão de Status -->
+            <div id="status-button-container" class="absolute bottom-10 left-1/2 -translate-x-1/2 z-[1010]">
+                <button id="status-btn" class="hidden px-8 py-4 text-xl font-bold text-white rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 active:scale-95">
+                    Iniciar Mapa
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="location-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
+    <div id="confirm-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
+
+    <!-- Tela de Carregamento -->
+    <div id="loading-screen" class="fixed inset-0 z-[2000] flex items-center justify-center bg-white">
+        <p class="text-gray-500 text-xl font-semibold">Carregando mapas do dia...</p>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore.js";
+
+        // --- Configuração do Firebase ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCpeqeg5OULEivfWeft_B47h2XiRtn75B8",
+            authDomain: "meu-app-de-mapas-c4d00.firebaseapp.com",
+            projectId: "meu-app-de-mapas-c4d00",
+            storageBucket: "meu-app-de-mapas-c4d00.appspot.com",
+            messagingSenderId: "544761751470",
+            appId: "1:544761751470:web:646dcfef9745bfd77b8a3f",
+            measurementId: "G-LDX3H58RT5"
+        };
+
+        // --- Inicialização ---
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- Variáveis Globais ---
+        let map;
+        let mapLayers = new L.FeatureGroup();
+        let assignmentsForLocation = [];
+        let currentAssignmentIndex = -1;
+        let activeAssignment = null;
+
+        const locationModalEl = document.getElementById('location-modal');
+        const confirmModalEl = document.getElementById('confirm-modal');
+        const statusBtn = document.getElementById('status-btn');
+        const noMapsMessage = document.getElementById('no-maps-message');
+        const mapContainer = document.getElementById('map-container');
+
+        // --- Funções de Data e UI ---
+        function getWeekStartDate(d) {
+            const date = new Date(d);
+            date.setHours(0, 0, 0, 0); // Zera o horário para evitar problemas de fuso
+            const day = date.getDay();
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(date.setDate(diff));
+        }
+
+        function updateHeaderDate() {
+            const today = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const formattedDate = today.toLocaleDateString('pt-BR', options);
+            document.getElementById('current-date-header').textContent = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+        }
+
+        function showLocationModal(locations, onSelect) {
+            let buttonsHtml = locations.map(location => 
+                `<button class="location-btn w-full px-4 py-3 mb-3 font-semibold text-white bg-gray-700 rounded-lg hover:bg-gray-800 transition-all duration-300" data-location="${location}">${location}</button>`
+            ).join('');
+
+            locationModalEl.innerHTML = `<div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm modal-content"><h3 class="text-lg font-semibold mb-4 text-center">Escolha o seu Local de Trabalho</h3>${buttonsHtml}</div>`;
+            locationModalEl.classList.remove('hidden');
+
+            document.querySelectorAll('.location-btn').forEach(btn => {
+                btn.onclick = () => {
+                    locationModalEl.classList.add('hidden');
+                    onSelect(btn.dataset.location);
+                };
+            });
+        }
+
+        function showConfirmModal(message, onConfirm) {
+            confirmModalEl.innerHTML = `
+                <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm modal-content">
+                    <p class="text-center text-gray-700">${message}</p>
+                    <div class="flex justify-end gap-3 mt-4">
+                        <button id="confirm-modal-cancel" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-transform transform hover:scale-105 active:scale-95">Cancelar</button>
+                        <button id="confirm-modal-confirm" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-transform transform hover:scale-105 active:scale-95">Confirmar</button>
+                    </div>
+                </div>
+            `;
+            confirmModalEl.classList.remove('hidden');
+            document.getElementById('confirm-modal-cancel').onclick = () => confirmModalEl.classList.add('hidden');
+            document.getElementById('confirm-modal-confirm').onclick = () => {
+                onConfirm();
+                confirmModalEl.classList.add('hidden');
+            };
+        }
+
+        // --- Funções do Mapa ---
+        function initMap() {
+            const standardMapLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+            map = L.map('map').setView([-19.9167, -43.9333], 13);
+            standardMapLayer.addTo(map);
+            map.addLayer(mapLayers);
+        }
+
+        async function displayNextMap() {
+            currentAssignmentIndex++;
+            if (currentAssignmentIndex >= assignmentsForLocation.length) {
+                mapContainer.classList.add('hidden');
+                statusBtn.classList.add('hidden');
+                noMapsMessage.classList.remove('hidden');
+                return;
+            }
+
+            activeAssignment = assignmentsForLocation[currentAssignmentIndex];
+            mapLayers.clearLayers();
+
+            try {
+                const fullSubmapRef = doc(db, "territories", activeAssignment.territoryId, "submaps", activeAssignment.submapId);
+                const submapDoc = await getDoc(fullSubmapRef);
+
+                if (submapDoc.exists()) {
+                    const submapData = submapDoc.data();
+                    const layer = L.geoJSON(JSON.parse(submapData.geoJSON), {
+                        style: { color: submapData.color, fillColor: submapData.color, weight: 2, fillOpacity: 0.7 }
+                    });
+
+                    layer.bindTooltip(submapData.name, {
+                        permanent: true,
+                        direction: 'center',
+                        className: 'map-label'
+                    });
+
+                    mapLayers.addLayer(layer);
+                    map.fitBounds(layer.getBounds().pad(0.1));
+                    updateStatusButton(activeAssignment.status || 'pendente');
+                } else {
+                    console.error("Submapa não encontrado:", activeAssignment.submapId);
+                    displayNextMap();
+                }
+            } catch (error) {
+                console.error("Erro ao buscar GeoJSON do submapa:", error);
+                displayNextMap();
+            }
+        }
+
+        function updateStatusButton(status) {
+            statusBtn.classList.remove('hidden', 'bg-green-400', 'bg-red-400');
+            if (status === 'pendente') {
+                statusBtn.textContent = 'Iniciar Mapa';
+                statusBtn.classList.add('bg-green-400');
+            } else if (status === 'trabalhando') {
+                statusBtn.textContent = 'Concluir Mapa';
+                statusBtn.classList.add('bg-red-400');
+            } else {
+                statusBtn.classList.add('hidden');
+            }
+        }
+
+        async function handleStatusClick() {
+            if (!activeAssignment) return;
+
+            const currentStatus = activeAssignment.status || 'pendente';
+
+            if (currentStatus === 'pendente') {
+                const newStatus = 'trabalhando';
+                const assignmentRef = doc(db, "assignments", activeAssignment.id);
+                await updateDoc(assignmentRef, { status: newStatus });
+                activeAssignment.status = newStatus;
+                updateStatusButton(newStatus);
+            } else if (currentStatus === 'trabalhando') {
+                showConfirmModal("Deseja realmente concluir este mapa?", async () => {
+                    const newStatus = 'concluido';
+                    const assignmentRef = doc(db, "assignments", activeAssignment.id);
+                    await updateDoc(assignmentRef, { 
+                        status: newStatus,
+                        completedAt: new Date()
+                    });
+                    displayNextMap();
+                });
+            }
+        }
+
+        // --- Lógica de Inicialização ---
+        async function start() {
+            const today = new Date();
+            const dayNames = ["DOMINGO", "SEGUNDA", "TERÇA", "QUARTA", "QUINTA", "SEXTA", "SÁBADO"];
+            const currentDayName = dayNames[today.getDay()];
+            const weekStartString = getWeekStartDate(today).toISOString().split('T')[0];
+
+            const submapToTerritoryMap = new Map();
+            const territoriesSnapshot = await getDocs(query(collection(db, "territories")));
+            const submapPromises = [];
+
+            territoriesSnapshot.forEach(territoryDoc => {
+                const territoryId = territoryDoc.id;
+                const submapsColRef = collection(db, "territories", territoryId, "submaps");
+                submapPromises.push(getDocs(submapsColRef).then(submapSnapshot => {
+                    submapSnapshot.forEach(submapDoc => {
+                        submapToTerritoryMap.set(submapDoc.id, territoryId);
+                    });
+                }));
+            });
+            await Promise.all(submapPromises);
+
+            const assignmentsQuery = query(collection(db, "assignments"), 
+                where("weekStart", "==", weekStartString),
+                where("dayOfWeek", "==", currentDayName)
+            );
+            
+            const snapshot = await getDocs(assignmentsQuery);
+            const allAssignmentsForDay = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return { 
+                    id: doc.id, 
+                    ...data,
+                    territoryId: submapToTerritoryMap.get(data.submapId)
+                };
+            });
+
+            const locationsForDay = [...new Set(allAssignmentsForDay.map(a => a.location))];
+
+            document.getElementById('loading-screen').classList.add('hidden');
+
+            if (locationsForDay.length === 0) {
+                 mapContainer.classList.add('hidden');
+                 statusBtn.classList.add('hidden');
+                 noMapsMessage.classList.remove('hidden');
+                 return;
+            }
+
+            const startWithLocation = (location) => {
+                assignmentsForLocation = allAssignmentsForDay
+                    .filter(a => a.location === location && a.status !== 'concluido' && a.territoryId)
+                    .sort((a,b) => a.assignedAt.seconds - b.assignedAt.seconds);
+                
+                displayNextMap();
+            };
+
+            if (locationsForDay.length === 1) {
+                startWithLocation(locationsForDay[0]);
+            } else {
+                showLocationModal(locationsForDay, startWithLocation);
+            }
+        }
+
+        window.onload = () => {
+            initMap();
+            updateHeaderDate();
+            statusBtn.addEventListener('click', handleStatusClick);
+            start();
+        };
+    </script>
+</body>
+</html>

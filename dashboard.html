@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SUNRISE</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fontes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Conteúdo do Dashboard (inicialmente oculto) -->
+    <div id="dashboard-content" class="hidden">
+        <!-- Cabeçalho -->
+        <header class="bg-white shadow-md">
+            <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center">
+                    <img src="https://i.ibb.co/1G7Py7TT/SUNRISE.png" alt="SUNRISE Logo" class="h-12 w-auto">
+                </div>
+                <div class="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border">
+                    <button id="change-password-btn" class="flex items-center px-3 py-2 font-semibold text-yellow-600 hover:bg-yellow-100 rounded-md transition-colors duration-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" />
+                        </svg>
+                        Alterar Senha
+                    </button>
+                    <button id="logout-btn" class="flex items-center px-3 py-2 font-semibold text-red-600 hover:bg-red-100 rounded-md transition-colors duration-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Sair
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Conteúdo Principal -->
+        <main class="container mx-auto px-6 py-12 text-center">
+            <h1 id="greeting" class="text-4xl font-bold text-gray-800"></h1>
+            
+            <!-- Botões de Navegação -->
+            <div id="nav-buttons" class="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Organizador -->
+                <a id="btn-organizador" href="index.html" class="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
+                    <div class="mx-auto bg-blue-100 rounded-full h-20 w-20 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                    </div>
+                    <h3 class="mt-6 text-xl font-semibold text-gray-800">Organizador</h3>
+                    <p class="mt-2 text-gray-500">Gerenciar territórios e mapas.</p>
+                </a>
+                
+                <!-- Editar Saídas de Campo -->
+                <a id="btn-editar-saidas" href="start.html" class="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
+                    <div class="mx-auto bg-indigo-100 rounded-full h-20 w-20 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="mt-6 text-xl font-semibold text-gray-800">Editar Saídas</h3>
+                    <p class="mt-2 text-gray-500">Ajustar os locais de saída.</p>
+                </a>
+
+                <!-- Designar Mapas -->
+                <a id="btn-designar" href="send.html" class="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
+                    <div class="mx-auto bg-green-100 rounded-full h-20 w-20 flex items-center justify-center">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                    </div>
+                    <h3 class="mt-6 text-xl font-semibold text-gray-800">Designar Mapas</h3>
+                    <p class="mt-2 text-gray-500">Enviar mapas para equipes.</p>
+                </a>
+                
+                <!-- Ver Designação -->
+                <a id="btn-ver" href="get.html" class="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
+                    <div class="mx-auto bg-yellow-100 rounded-full h-20 w-20 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </div>
+                    <h3 class="mt-6 text-xl font-semibold text-gray-800">Ver Designação</h3>
+                    <p class="mt-2 text-gray-500">Acompanhar status dos mapas.</p>
+                </a>
+
+                <!-- Mapa Geral -->
+                <a id="btn-mapa-geral" href="map-full.html" class="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
+                    <div class="mx-auto bg-red-100 rounded-full h-20 w-20 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="mt-6 text-xl font-semibold text-gray-800">Mapa Geral</h3>
+                    <p class="mt-2 text-gray-500">Visualizar todos os territórios.</p>
+                </a>
+
+                <!-- Gerenciar Usuários -->
+                <a id="btn-gerenciar-usuarios" href="hierarchy.html" class="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
+                    <div class="mx-auto bg-gray-100 rounded-full h-20 w-20 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                           <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="mt-6 text-xl font-semibold text-gray-800">Gerenciar Hierarquia</h3>
+                    <p class="mt-2 text-gray-500">Definir permissões e acessos.</p>
+                </a>
+            </div>
+        </main>
+    </div>
+
+    <!-- Tela de Carregamento -->
+    <div id="loading-screen" class="flex items-center justify-center h-screen">
+        <p class="text-gray-500">Carregando...</p>
+    </div>
+    
+    <!-- Modals -->
+    <div id="alert-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
+    <div id="password-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore.js";
+
+        // --- Configuração do Firebase ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCpeqeg5OULEivfWeft_B47h2XiRtn75B8",
+            authDomain: "meu-app-de-mapas-c4d00.firebaseapp.com",
+            projectId: "meu-app-de-mapas-c4d00",
+            storageBucket: "meu-app-de-mapas-c4d00.appspot.com",
+            messagingSenderId: "544761751470",
+            appId: "1:544761751470:web:646dcfef9745bfd77b8a3f",
+            measurementId: "G-LDX3H58RT5"
+        };
+
+        // --- Inicialização ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- Elementos do DOM ---
+        const dashboardContent = document.getElementById('dashboard-content');
+        const loadingScreen = document.getElementById('loading-screen');
+        const greetingEl = document.getElementById('greeting');
+        const logoutBtn = document.getElementById('logout-btn');
+        const changePasswordBtn = document.getElementById('change-password-btn');
+        const alertModalEl = document.getElementById('alert-modal');
+        const passwordModalEl = document.getElementById('password-modal');
+        
+        const btnOrganizador = document.getElementById('btn-organizador');
+        const btnEditarSaidas = document.getElementById('btn-editar-saidas');
+        const btnDesignar = document.getElementById('btn-designar');
+        const btnVer = document.getElementById('btn-ver');
+        const btnMapaGeral = document.getElementById('btn-mapa-geral');
+        const btnGerenciarUsuarios = document.getElementById('btn-gerenciar-usuarios');
+
+        // --- Lógica da Página ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDocRef = doc(db, "users", user.uid);
+                try {
+                    const userDoc = await getDoc(userDocRef);
+                    if (userDoc.exists()) {
+                        const userRole = userDoc.data().role;
+                        setupDashboard(user, userRole);
+                    } else {
+                        window.location.href = 'login.html';
+                    }
+                } catch (error) {
+                    window.location.href = 'login.html';
+                }
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        function setupDashboard(user, role) {
+            const username = user.email.split('@')[0];
+            const capitalizedUsername = username.charAt(0).toUpperCase() + username.slice(1);
+            
+            const hours = new Date().getHours();
+            let greetingText = hours < 12 ? "Bom dia" : hours < 18 ? "Boa tarde" : "Boa noite";
+            greetingEl.textContent = `${greetingText}, ${capitalizedUsername}!`;
+
+            if (role === 'admin') {
+                btnOrganizador.classList.remove('hidden');
+                btnEditarSaidas.classList.remove('hidden');
+                btnDesignar.classList.remove('hidden');
+                btnVer.classList.remove('hidden');
+                btnMapaGeral.classList.remove('hidden');
+                btnGerenciarUsuarios.classList.remove('hidden');
+            } else if (role === 'supervisor') {
+                btnDesignar.classList.remove('hidden');
+                btnVer.classList.remove('hidden');
+                btnMapaGeral.classList.remove('hidden');
+            } else if (role === 'user') {
+                btnVer.classList.remove('hidden');
+                btnMapaGeral.classList.remove('hidden');
+            }
+
+            dashboardContent.classList.remove('hidden');
+            loadingScreen.classList.add('hidden');
+        }
+
+        function showAlert(message, isSuccess = false) {
+            const bgColor = isSuccess ? 'bg-green-500' : 'bg-blue-500';
+            alertModalEl.innerHTML = `<div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm modal-content"><p class="text-center text-gray-700">${message}</p><button id="alert-close-btn" class="mt-4 w-full ${bgColor} text-white py-2 rounded-md hover:opacity-90">OK</button></div>`;
+            alertModalEl.classList.remove('hidden');
+            document.getElementById('alert-close-btn').onclick = () => alertModalEl.classList.add('hidden');
+        }
+
+        function showPasswordChangeModal() {
+            passwordModalEl.innerHTML = `
+                <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm modal-content">
+                    <h3 class="text-lg font-semibold mb-4">Alterar Senha</h3>
+                    <div class="space-y-4">
+                        <input type="password" id="current-password" class="w-full border border-gray-300 p-2 rounded-md" placeholder="Senha Atual">
+                        <input type="password" id="new-password" class="w-full border border-gray-300 p-2 rounded-md" placeholder="Nova Senha">
+                        <input type="password" id="confirm-password" class="w-full border border-gray-300 p-2 rounded-md" placeholder="Confirmar Nova Senha">
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button id="password-cancel-btn" class="px-4 py-2 bg-gray-200 rounded-md">Cancelar</button>
+                        <button id="password-confirm-btn" class="px-4 py-2 bg-blue-500 text-white rounded-md">Confirmar</button>
+                    </div>
+                </div>
+            `;
+            passwordModalEl.classList.remove('hidden');
+
+            document.getElementById('password-cancel-btn').onclick = () => passwordModalEl.classList.add('hidden');
+            document.getElementById('password-confirm-btn').onclick = handleChangePassword;
+        }
+
+        async function handleChangePassword() {
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const user = auth.currentUser;
+
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showAlert("Por favor, preencha todos os campos.");
+                return;
+            }
+            if (newPassword.length < 6) {
+                showAlert("A nova senha deve ter pelo menos 6 caracteres.");
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                showAlert("As novas senhas não coincidem.");
+                return;
+            }
+
+            try {
+                const credential = EmailAuthProvider.credential(user.email, currentPassword);
+                await reauthenticateWithCredential(user, credential);
+                await updatePassword(user, newPassword);
+                passwordModalEl.classList.add('hidden');
+                showAlert("Senha alterada com sucesso!", true);
+            } catch (error) {
+                console.error("Erro ao alterar senha:", error.code);
+                if (error.code === 'auth/wrong-password') {
+                    showAlert("A senha atual está incorreta.");
+                } else {
+                    showAlert("Ocorreu um erro ao alterar a senha.");
+                }
+            }
+        }
+
+        // --- Event Listeners ---
+        logoutBtn.addEventListener('click', () => {
+            signOut(auth).then(() => {
+                window.location.href = 'login.html';
+            }).catch((error) => {
+                console.error("Erro ao fazer logout:", error);
+            });
+        });
+
+        changePasswordBtn.addEventListener('click', showPasswordChangeModal);
+
+    </script>
+</body>
+</html>

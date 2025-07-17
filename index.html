@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Territórios e Mapas com Firebase</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet.js CSS e JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Leaflet.draw Plugin CSS e JS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+    <!-- Leaflet-Omnivore (Para importar KML/KMZ) -->
+    <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js'></script>
+
+    <!-- JSZip (Para descompactar arquivos KMZ) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <!-- Fontes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        .leaflet-container { height: 100%; width: 100%; border-radius: 0.5rem; }
+        #kmz-importer { display: none; }
+        .modal-backdrop { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease; }
+        .leaflet-draw-toolbar { z-index: 1011 !important; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Tela de Carregamento/Verificação -->
+    <div id="auth-loading-screen" class="flex items-center justify-center h-screen">
+        <p class="text-gray-500 text-xl font-semibold">Verificando autorização...</p>
+    </div>
+
+    <!-- Conteúdo Principal (inicialmente oculto) -->
+    <div id="main-content" class="hidden h-screen">
+        <!-- Barra Lateral -->
+        <aside class="w-80 bg-white shadow-lg flex flex-col flex-shrink-0 h-full">
+            <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                <h1 class="text-xl font-bold text-gray-700">
+                    <a href="dashboard.html" title="Voltar para o Dashboard">
+                        <img src="https://i.ibb.co/1G7Py7TT/SUNRISE.png" alt="SUNRISE" border="0" class="h-16 w-auto">
+                    </a>
+                </h1>
+                <button id="add-territory-btn" class="p-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-transform transform hover:scale-105 active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                </button>
+            </div>
+            <nav id="territory-list" class="flex-1 overflow-y-auto p-2 space-y-1"></nav>
+            <div class="p-4 border-t border-gray-200">
+                <button id="import-kmz-btn" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-transform transform hover:scale-105 active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                    Importar KMZ/KML
+                </button>
+                <input type="file" id="kmz-importer" accept=".kmz,.kml">
+            </div>
+        </aside>
+
+        <!-- Área Principal -->
+        <main class="flex-1 flex flex-col p-4 gap-4 relative">
+            <header class="bg-white p-4 rounded-lg shadow-sm flex items-center justify-between">
+                <h2 id="current-territory-name" class="text-2xl font-semibold text-gray-800">Selecione um Território</h2>
+            </header>
+            <div id="map-container" class="flex-1 bg-white rounded-lg shadow-sm p-1 relative">
+                <div id="map"></div>
+                <div id="search-container" class="absolute top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-lg z-[1010]">
+                    <div class="relative">
+                        <input type="text" id="search-input" placeholder="Buscar local, endereço..." class="w-full pl-10 pr-4 py-2.5 rounded-full shadow-lg border-2 border-transparent focus:border-blue-500 focus:ring-0">
+                        <div class="absolute top-1/2 left-3 -translate-y-1/2">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        </div>
+                    </div>
+                    <div id="search-suggestions" class="bg-white rounded-lg shadow-lg mt-2 overflow-hidden hidden"></div>
+                </div>
+            </div>
+            <div id="layer-switcher" class="absolute bottom-8 right-8 z-[1010]">
+                <div id="layer-options" class="hidden absolute bottom-full mb-2 right-0 bg-white rounded-lg shadow-lg overflow-hidden w-40">
+                    <a href="#" data-layer="standard" class="layer-option flex items-center gap-3 p-3 hover:bg-gray-100 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 16.382V5.618a1 1 0 00-1.447-.894L15 7m-6 10V7m0 0L9 4m0 0l6 3m-6-3l6-3" /></svg>
+                        <span>Padrão</span>
+                    </a>
+                    <a href="#" data-layer="satellite" class="layer-option flex items-center gap-3 p-3 hover:bg-gray-100 transition-colors">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2h1a2 2 0 002-2v-1a2 2 0 012-2h1.945M7.881 4.002l.07-.06a2 2 0 012.828 0l.07.06a2 2 0 010 2.828l-.07.06a2 2 0 01-2.828 0l-.07-.06a2 2 0 010-2.828zM12 21a9 9 0 100-18 9 9 0 000 18z" /></svg>
+                        <span>Satélite</span>
+                    </a>
+                </div>
+                <button id="layer-switcher-btn" class="p-3 bg-white rounded-full shadow-lg transition-transform transform hover:scale-105 active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="alert-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
+    <div id="name-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
+    <div id="confirm-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, onSnapshot, query, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore.js";
+
+        // --- Configuração do Firebase ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCpeqeg5OULEivfWeft_B47h2XiRtn75B8",
+            authDomain: "meu-app-de-mapas-c4d00.firebaseapp.com",
+            projectId: "meu-app-de-mapas-c4d00",
+            storageBucket: "meu-app-de-mapas-c4d00.appspot.com",
+            messagingSenderId: "544761751470",
+            appId: "1:544761751470:web:646dcfef9745bfd77b8a3f",
+            measurementId: "G-LDX3H58RT5"
+        };
+
+        // --- Inicialização ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- Variáveis Globais ---
+        let map;
+        let activeTerritory = null;
+        let unsubscribeTerritories = () => {};
+        let unsubscribeSubmaps = () => {};
+        let mapLayers = new L.FeatureGroup();
+        let drawControl;
+        let nameModalCallback = null;
+        let searchTimeout;
+
+        // --- Elementos do DOM ---
+        const mainContent = document.getElementById('main-content');
+        const loadingScreen = document.getElementById('auth-loading-screen');
+        const territoryListEl = document.getElementById('territory-list');
+        const currentTerritoryNameEl = document.getElementById('current-territory-name');
+        const alertModalEl = document.getElementById('alert-modal');
+        const nameModalEl = document.getElementById('name-modal');
+        const confirmModalEl = document.getElementById('confirm-modal');
+        
+        // --- Funções de Modal ---
+        function showAlert(message) {
+            alertModalEl.innerHTML = `
+                <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm modal-content">
+                    <p class="text-center text-gray-700">${message}</p>
+                    <button id="alert-close-btn" class="mt-4 w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition-transform transform hover:scale-105 active:scale-95">OK</button>
+                </div>
+            `;
+            alertModalEl.classList.remove('hidden');
+            document.getElementById('alert-close-btn').onclick = () => alertModalEl.classList.add('hidden');
+        }
+
+        function showNameModal(title, callback) {
+            nameModalCallback = callback;
+            nameModalEl.innerHTML = `
+                <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm modal-content">
+                    <h3 class="text-lg font-semibold mb-4">${title}</h3>
+                    <input type="text" id="name-modal-input" class="w-full border border-gray-300 p-2 rounded-md" placeholder="Digite o nome...">
+                    <div class="flex justify-end gap-3 mt-4">
+                        <button id="name-modal-cancel" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-transform transform hover:scale-105 active:scale-95">Cancelar</button>
+                        <button id="name-modal-confirm" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-transform transform hover:scale-105 active:scale-95">Confirmar</button>
+                    </div>
+                </div>
+            `;
+            nameModalEl.classList.remove('hidden');
+            
+            const input = document.getElementById('name-modal-input');
+            input.focus();
+            
+            document.getElementById('name-modal-cancel').onclick = () => {
+                nameModalEl.classList.add('hidden');
+                if (nameModalCallback) nameModalCallback(null);
+            };
+            document.getElementById('name-modal-confirm').onclick = () => {
+                if (nameModalCallback) nameModalCallback(input.value);
+                nameModalEl.classList.add('hidden');
+            };
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') document.getElementById('name-modal-confirm').click();
+            };
+        }
+
+        function showConfirmModal(message, onConfirm) {
+            confirmModalEl.innerHTML = `
+                <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm modal-content">
+                    <p class="text-center text-gray-700">${message}</p>
+                    <div class="flex justify-end gap-3 mt-4">
+                        <button id="confirm-modal-cancel" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-transform transform hover:scale-105 active:scale-95">Cancelar</button>
+                        <button id="confirm-modal-confirm" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-transform transform hover:scale-105 active:scale-95">Excluir</button>
+                    </div>
+                </div>
+            `;
+            confirmModalEl.classList.remove('hidden');
+            document.getElementById('confirm-modal-cancel').onclick = () => confirmModalEl.classList.add('hidden');
+            document.getElementById('confirm-modal-confirm').onclick = () => {
+                onConfirm();
+                confirmModalEl.classList.add('hidden');
+            };
+        }
+
+        // --- Funções do Mapa ---
+        function initMap() {
+            const standardMapLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+            const satelliteMapLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+            map = L.map('map').setView([-19.9167, -43.9333], 13);
+            standardMapLayer.addTo(map);
+            map.addLayer(mapLayers);
+
+            document.querySelectorAll('.layer-option').forEach(option => {
+                option.addEventListener('click', e => {
+                    e.preventDefault();
+                    map.eachLayer(layer => {
+                        if (layer instanceof L.TileLayer) map.removeLayer(layer);
+                    });
+                    const layerType = e.currentTarget.dataset.layer;
+                    (layerType === 'satellite' ? satelliteMapLayer : standardMapLayer).addTo(map);
+                    document.getElementById('layer-options').classList.add('hidden');
+                });
+            });
+            
+            map.on(L.Draw.Event.CREATED, handleDrawCreated);
+        }
+
+        // --- Funções de Renderização e UI ---
+        function renderTerritories(territories) {
+            territories.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+            territoryListEl.innerHTML = '';
+            if (territories.length === 0) {
+                territoryListEl.innerHTML = '<p class="p-4 text-center text-gray-500">Nenhum território criado.</p>';
+                return;
+            }
+            territories.forEach(t => {
+                const territoryDiv = document.createElement('div');
+                territoryDiv.className = `p-2 rounded-md flex items-center justify-between transition-colors ${activeTerritory?.id === t.id ? 'bg-blue-100' : 'hover:bg-gray-100'}`;
+                
+                const link = document.createElement('a');
+                link.href = '#';
+                link.textContent = t.name;
+                link.className = `flex-grow ${activeTerritory?.id === t.id ? 'font-semibold' : ''}`;
+                link.dataset.territoryId = t.id;
+                link.onclick = (e) => { e.preventDefault(); selectTerritory(t); };
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'p-1 text-gray-400 hover:text-red-500 rounded-full transition-transform transform hover:scale-110 active:scale-95';
+                deleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>`;
+                deleteBtn.onclick = () => handleDeleteTerritory(t.id, t.name);
+
+                territoryDiv.appendChild(link);
+                territoryDiv.appendChild(deleteBtn);
+                territoryListEl.appendChild(territoryDiv);
+            });
+        }
+
+        function renderSubmaps(submaps) {
+            submaps.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+            mapLayers.clearLayers();
+            const activeTerritoryDiv = Array.from(territoryListEl.children).find(div => div.querySelector('a')?.dataset.territoryId === activeTerritory?.id);
+            if (!activeTerritoryDiv) return;
+
+            const oldSubmapList = document.getElementById('submap-list');
+            if (oldSubmapList) oldSubmapList.remove();
+            
+            if (submaps.length === 0) return;
+
+            const submapListContainer = document.createElement('div');
+            submapListContainer.id = 'submap-list';
+            submapListContainer.className = 'pl-6 mt-1 space-y-1';
+
+            submaps.forEach(sm => {
+                const layer = L.geoJSON(JSON.parse(sm.geoJSON), {
+                    style: { color: sm.color, fillColor: sm.color, weight: 2 }
+                });
+                layer.submapId = sm.id;
+                mapLayers.addLayer(layer);
+
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between p-2 rounded-md hover:bg-gray-50 group';
+                item.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="color-dot w-4 h-4 rounded-full cursor-pointer border border-gray-300" style="background-color: ${sm.color};"></span>
+                        <input type="color" value="${sm.color}" class="submap-color-picker hidden" data-id="${sm.id}">
+                        <span class="text-sm text-gray-600">${sm.name}</span>
+                    </div>
+                    <button class="delete-submap-btn p-1 text-gray-400 hover:text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-transform transform hover:scale-110 active:scale-95" data-id="${sm.id}" data-name="${sm.name}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                    </button>
+                `;
+                submapListContainer.appendChild(item);
+            });
+            
+            activeTerritoryDiv.after(submapListContainer);
+            
+            document.querySelectorAll('.color-dot').forEach(dot => {
+                dot.addEventListener('click', e => {
+                    e.stopPropagation();
+                    e.target.nextElementSibling.click();
+                });
+            });
+
+            document.querySelectorAll('.submap-color-picker').forEach(picker => {
+                const dot = picker.previousElementSibling;
+                picker.addEventListener('input', e => {
+                    if (dot) dot.style.backgroundColor = e.target.value;
+                    handleColorChange(e.target.dataset.id, e.target.value, true);
+                });
+                picker.addEventListener('change', e => {
+                    handleColorChange(e.target.dataset.id, e.target.value, false);
+                });
+            });
+
+            document.querySelectorAll('.delete-submap-btn').forEach(btn => {
+                btn.addEventListener('click', e => handleDeleteSubmap(e.currentTarget.dataset.id, e.currentTarget.dataset.name));
+            });
+        }
+        
+        // --- Funções de Lógica de Dados (Firebase) ---
+        function selectTerritory(territory) {
+            activeTerritory = territory;
+            currentTerritoryNameEl.textContent = territory.name;
+            
+            document.querySelectorAll('#territory-list > div').forEach(div => {
+                div.classList.toggle('bg-blue-100', div.querySelector('a')?.dataset.territoryId === territory.id);
+                div.querySelector('a')?.classList.toggle('font-semibold', div.querySelector('a')?.dataset.territoryId === territory.id);
+            });
+            
+            unsubscribeSubmaps();
+            
+            const submapsColRef = collection(db, "territories", territory.id, "submaps");
+            unsubscribeSubmaps = onSnapshot(submapsColRef, (snapshot) => {
+                const submapsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderSubmaps(submapsData);
+            });
+
+            if (drawControl) map.removeControl(drawControl);
+            drawControl = new L.Control.Draw({
+                edit: false, 
+                draw: {
+                    polygon: true, polyline: false, rectangle: false,
+                    circle: false, marker: false, circlemarker: false,
+                }
+            });
+            map.addControl(drawControl);
+        }
+
+        async function handleAddTerritory() {
+            showNameModal("Digite o nome do novo território:", async (name) => {
+                if (name && name.trim() !== '') {
+                    await addDoc(collection(db, "territories"), {
+                        name: name.trim()
+                    });
+                } else if (name !== null) {
+                    showAlert("O nome do território não pode ser vazio.");
+                }
+            });
+        }
+
+        async function handleDrawCreated(e) {
+            if (!activeTerritory) {
+                showAlert('Por favor, selecione um território para desenhar.');
+                return;
+            }
+            const layer = e.layer;
+            showNameModal("Digite o nome do novo polígono:", async (name) => {
+                if (name && name.trim() !== '') {
+                    const geoJSON = JSON.stringify(layer.toGeoJSON());
+                    const colors = ['#3388ff', '#e54a4a', '#3be53b', '#e5e53b', '#e53be5', '#3be5e5', '#ff9900', '#9933ff'];
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+
+                    await addDoc(collection(db, "territories", activeTerritory.id, "submaps"), {
+                        name: name.trim(), geoJSON, color
+                    });
+                } else if (name !== null) {
+                    showAlert("Criação de polígono cancelada.");
+                }
+            });
+        }
+        
+        async function handleColorChange(submapId, newColor, isPreview) {
+            if (!activeTerritory) return;
+            
+            mapLayers.eachLayer(layer => {
+                if (layer.submapId === submapId) {
+                    layer.setStyle({ color: newColor, fillColor: newColor });
+                }
+            });
+
+            if (!isPreview) {
+                const submapRef = doc(db, "territories", activeTerritory.id, "submaps", submapId);
+                await updateDoc(submapRef, { color: newColor });
+            }
+        }
+
+        async function handleDeleteTerritory(territoryId, territoryName) {
+            showConfirmModal(`Tem certeza que deseja excluir o território "${territoryName}" e todos os seus mapas?`, async () => {
+                const submapsQuery = query(collection(db, "territories", territoryId, "submaps"));
+                const submapsSnapshot = await getDocs(submapsQuery);
+                const deletePromises = submapsSnapshot.docs.map(d => deleteDoc(d.ref));
+                await Promise.all(deletePromises);
+
+                await deleteDoc(doc(db, "territories", territoryId));
+
+                if (activeTerritory?.id === territoryId) {
+                    activeTerritory = null;
+                    currentTerritoryNameEl.textContent = 'Selecione um Território';
+                    mapLayers.clearLayers();
+                    if (drawControl) map.removeControl(drawControl);
+                }
+            });
+        }
+
+        async function handleDeleteSubmap(submapId, submapName) {
+            showConfirmModal(`Tem certeza que deseja excluir o mapa "${submapName}"?`, async () => {
+                if (!activeTerritory) return;
+                await deleteDoc(doc(db, "territories", activeTerritory.id, "submaps", submapId));
+            });
+        }
+
+        async function handleImportFile(event) {
+            if (!activeTerritory) {
+                showAlert('Por favor, selecione um território primeiro.');
+                return;
+            }
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const processKmlString = (kmlString) => {
+                const styledLayerGroup = omnivore.kml.parse(kmlString);
+                const polygonsByName = {};
+
+                styledLayerGroup.eachLayer(layer => {
+                    const name = layer.feature?.properties?.name || 'Polígono importado';
+                    const color = layer.options.color || layer.options.fillColor;
+
+                    if (!polygonsByName[name]) {
+                        polygonsByName[name] = {
+                            geoJSONs: [],
+                            color: color 
+                        };
+                    }
+                    polygonsByName[name].geoJSONs.push(layer.toGeoJSON());
+                });
+
+                const defaultColors = ['#3388ff', '#e54a4a', '#3be53b', '#e5e53b', '#e53be5', '#3be5e5', '#ff9900', '#9933ff'];
+                let colorIndex = mapLayers.getLayers().length;
+
+                for (const name in polygonsByName) {
+                    const group = polygonsByName[name];
+                    const featureCollection = {
+                        type: "FeatureCollection",
+                        features: group.geoJSONs
+                    };
+                    const geoJSON = JSON.stringify(featureCollection);
+                    const finalColor = group.color || defaultColors[colorIndex++ % defaultColors.length];
+
+                    addDoc(collection(db, "territories", activeTerritory.id, "submaps"), {
+                        name,
+                        geoJSON,
+                        color: finalColor
+                    });
+                }
+            };
+
+            if (file.name.toLowerCase().endsWith('.kml')) {
+                const reader = new FileReader();
+                reader.onload = (e) => processKmlString(e.target.result);
+                reader.readAsText(file);
+            } else if (file.name.toLowerCase().endsWith('.kmz')) {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const zip = await JSZip.loadAsync(e.target.result);
+                        const kmlFile = Object.keys(zip.files).find(name => name.toLowerCase().endsWith('.kml'));
+                        if (kmlFile) {
+                            const kmlString = await zip.file(kmlFile).async('string');
+                            processKmlString(kmlString);
+                        } else {
+                            showAlert('Arquivo .kml não encontrado dentro do .kmz.');
+                        }
+                    } catch (error) {
+                        showAlert('Erro ao processar o arquivo .kmz.');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+            event.target.value = '';
+        }
+        
+        function handleSearch() {
+            const searchInput = document.getElementById('search-input');
+            const searchSuggestions = document.getElementById('search-suggestions');
+            const query = searchInput.value;
+            if (query.length < 3) {
+                searchSuggestions.innerHTML = '';
+                searchSuggestions.classList.add('hidden');
+                return;
+            }
+
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`)
+                .then(response => response.json())
+                .then(data => {
+                    searchSuggestions.innerHTML = '';
+                    if (data && data.length > 0) {
+                        data.forEach(item => {
+                            const suggestionDiv = document.createElement('div');
+                            suggestionDiv.className = 'p-3 hover:bg-gray-100 cursor-pointer text-sm';
+                            suggestionDiv.textContent = item.display_name;
+                            suggestionDiv.addEventListener('click', () => {
+                                searchInput.value = item.display_name;
+                                searchSuggestions.classList.add('hidden');
+                                map.setView([item.lat, item.lon], 15);
+                            });
+                            searchSuggestions.appendChild(suggestionDiv);
+                        });
+                        searchSuggestions.classList.remove('hidden');
+                    } else {
+                        searchSuggestions.classList.add('hidden');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro na busca:', error);
+                    searchSuggestions.classList.add('hidden');
+                });
+        }
+
+        // --- Inicialização da Aplicação ---
+        window.onload = () => {
+            onAuthStateChanged(auth, (user) => {
+                if (user && user.email.toLowerCase() === 'bernardo@njl.com') {
+                    // Usuário é admin, carregar a aplicação
+                    loadingScreen.classList.add('hidden');
+                    mainContent.classList.remove('hidden');
+                    mainContent.classList.add('flex'); // Garante que o layout flex seja aplicado
+
+                    initMap();
+                
+                    document.getElementById('add-territory-btn').addEventListener('click', handleAddTerritory);
+                    document.getElementById('import-kmz-btn').addEventListener('click', () => document.getElementById('kmz-importer').click());
+                    document.getElementById('kmz-importer').addEventListener('change', handleImportFile);
+                    document.getElementById('layer-switcher-btn').addEventListener('click', () => document.getElementById('layer-options').classList.toggle('hidden'));
+                    
+                    const searchInput = document.getElementById('search-input');
+                    searchInput.addEventListener('input', () => {
+                        clearTimeout(searchTimeout);
+                        searchTimeout = setTimeout(handleSearch, 300);
+                    });
+                    document.addEventListener('click', (e) => {
+                        const searchContainer = document.getElementById('search-container');
+                        if (!searchContainer.contains(e.target)) {
+                            document.getElementById('search-suggestions').classList.add('hidden');
+                        }
+                    });
+                    
+                    unsubscribeTerritories = onSnapshot(query(collection(db, "territories")), (snapshot) => {
+                        const territoriesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        renderTerritories(territoriesData);
+                    });
+                } else {
+                    // Usuário não é admin ou não está logado, redireciona
+                    window.location.href = 'login.html';
+                }
+            });
+        };
+    </script>
+</body>
+</html>

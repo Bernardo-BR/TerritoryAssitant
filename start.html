@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Saídas de Campo - SUNRISE</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fontes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Tela de Carregamento/Verificação -->
+    <div id="auth-loading-screen" class="flex items-center justify-center h-screen">
+        <p class="text-gray-500 text-xl font-semibold">Verificando autorização...</p>
+    </div>
+
+    <!-- Conteúdo Principal (inicialmente oculto) -->
+    <div id="main-content" class="hidden">
+        <!-- Cabeçalho -->
+        <header class="bg-white shadow-md">
+            <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <a href="dashboard.html" title="Voltar para o Dashboard">
+                    <img src="https://i.ibb.co/1G7Py7TT/SUNRISE.png" alt="SUNRISE Logo" class="h-12 w-auto">
+                </a>
+                <h2 class="text-2xl font-semibold text-gray-700">Editar Saídas de Campo</h2>
+            </div>
+        </header>
+
+        <!-- Lista de Dias da Semana -->
+        <main class="container mx-auto px-6 py-12">
+            <div id="days-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Cards dos dias serão inseridos aqui -->
+            </div>
+        </main>
+    </div>
+    
+    <!-- Modal de Alerta -->
+    <div id="alert-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
+
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, onSnapshot, updateDoc, setDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore.js";
+
+        // --- Configuração do Firebase ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCpeqeg5OULEivfWeft_B47h2XiRtn75B8",
+            authDomain: "meu-app-de-mapas-c4d00.firebaseapp.com",
+            projectId: "meu-app-de-mapas-c4d00",
+            storageBucket: "meu-app-de-mapas-c4d00.appspot.com",
+            messagingSenderId: "544761751470",
+            appId: "1:544761751470:web:646dcfef9745bfd77b8a3f",
+            measurementId: "G-LDX3H58RT5"
+        };
+
+        // --- Inicialização ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- Elementos do DOM ---
+        const mainContent = document.getElementById('main-content');
+        const loadingScreen = document.getElementById('auth-loading-screen');
+        const daysListContainer = document.getElementById('days-list-container');
+        const alertModalEl = document.getElementById('alert-modal');
+
+        const weekDays = ["SEGUNDA", "TERÇA", "QUARTA", "QUINTA", "SEXTA", "SÁBADO", "DOMINGO"];
+
+        // --- Lógica da Página ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDocRef = doc(db, "users", user.uid);
+                const userDoc = await getDoc(userDocRef);
+
+                if (userDoc.exists()) {
+                    const userRole = userDoc.data().role;
+                    if (userRole === 'admin' || userRole === 'supervisor') {
+                        loadingScreen.classList.add('hidden');
+                        mainContent.classList.remove('hidden');
+                        setupPage();
+                    } else {
+                        window.location.href = 'login.html';
+                    }
+                } else {
+                    window.location.href = 'login.html';
+                }
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        function setupPage() {
+            const locationsColRef = collection(db, "fieldLocations");
+            onSnapshot(locationsColRef, (snapshot) => {
+                const locationsData = {};
+                snapshot.forEach(doc => {
+                    locationsData[doc.id] = doc.data().locations || [];
+                });
+                renderDays(locationsData);
+            });
+        }
+
+        function renderDays(locationsData) {
+            daysListContainer.innerHTML = '';
+            weekDays.forEach(day => {
+                const dayCard = document.createElement('div');
+                dayCard.className = 'bg-white p-6 rounded-2xl shadow-lg';
+                
+                const locations = locationsData[day] || [];
+                const locationsHtml = locations.map(loc => `
+                    <li class="flex items-center justify-between py-2 border-b border-gray-100">
+                        <span class="text-gray-700">${loc}</span>
+                        <button class="delete-location-btn p-1 text-gray-400 hover:text-red-500 rounded-full" data-day="${day}" data-location="${loc}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </li>
+                `).join('');
+
+                dayCard.innerHTML = `
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">${day}</h3>
+                    <ul class="space-y-2 mb-4">
+                        ${locationsHtml || '<li class="text-gray-400 text-sm">Nenhum local definido.</li>'}
+                    </ul>
+                    <div class="flex gap-2">
+                        <input type="text" class="add-location-input w-full px-3 py-2 text-gray-700 bg-gray-100 border-2 border-transparent rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Novo local...">
+                        <button class="add-location-btn p-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600" data-day="${day}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </div>
+                `;
+                daysListContainer.appendChild(dayCard);
+            });
+
+            // Adiciona event listeners
+            document.querySelectorAll('.add-location-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const day = e.currentTarget.dataset.day;
+                    const input = e.currentTarget.previousElementSibling;
+                    const locationName = input.value.trim();
+                    if (locationName) {
+                        await addLocation(day, locationName);
+                        input.value = '';
+                    }
+                });
+            });
+
+            document.querySelectorAll('.delete-location-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const day = e.currentTarget.dataset.day;
+                    const locationName = e.currentTarget.dataset.location;
+                    await deleteLocation(day, locationName);
+                });
+            });
+        }
+
+        async function addLocation(day, locationName) {
+            const docRef = doc(db, "fieldLocations", day);
+            try {
+                // Usa set com merge para criar o documento se ele não existir
+                await setDoc(docRef, {
+                    locations: arrayUnion(locationName)
+                }, { merge: true });
+            } catch (error) {
+                console.error("Erro ao adicionar local:", error);
+                showAlert("Ocorreu um erro ao adicionar o local.");
+            }
+        }
+
+        async function deleteLocation(day, locationName) {
+            const docRef = doc(db, "fieldLocations", day);
+            try {
+                await updateDoc(docRef, {
+                    locations: arrayRemove(locationName)
+                });
+            } catch (error) {
+                console.error("Erro ao deletar local:", error);
+                showAlert("Ocorreu um erro ao deletar o local.");
+            }
+        }
+        
+        function showAlert(message) {
+            alertModalEl.innerHTML = `<div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm modal-content"><p class="text-center text-gray-700">${message}</p><button id="alert-close-btn" class="mt-4 w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600">OK</button></div>`;
+            alertModalEl.classList.remove('hidden');
+            document.getElementById('alert-close-btn').onclick = () => alertModalEl.classList.add('hidden');
+        }
+
+    </script>
+</body>
+</html>
