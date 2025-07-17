@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - SUNRISE</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Fontes -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -19,14 +17,14 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen">
+<body class="bg-gray-100 flex items-center justify-center h-screen px-4">
 
-    <div class="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-lg">
+    <div class="w-full max-w-md p-6 sm:p-8 space-y-6 bg-white rounded-2xl shadow-lg">
         <div class="flex justify-center">
-            <img src="https://i.ibb.co/1G7Py7TT/SUNRISE.png" alt="SUNRISE Logo" class="h-20 w-auto">
+            <img src="https://i.ibb.co/1G7Py7TT/SUNRISE.png" alt="SUNRISE Logo" class="h-16 sm:h-20 w-auto">
         </div>
         
-        <h2 class="text-2xl font-bold text-center text-gray-800">Acesse sua Conta</h2>
+        <h2 class="text-xl sm:text-2xl font-bold text-center text-gray-800">Acesse sua Conta</h2>
         
         <form id="login-form" class="mt-8 space-y-6" onsubmit="return false;">
             <div class="relative">
@@ -39,7 +37,6 @@
                 <input id="password" name="password" type="password" required class="w-full px-4 py-3 text-gray-700 bg-gray-100 border-2 border-transparent rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Senha">
             </div>
 
-            <!-- Checkbox "Lembrar-me" -->
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
                     <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
@@ -59,7 +56,6 @@
         <div id="error-message" class="text-center text-red-500 font-medium hidden"></div>
     </div>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-auth.js";
@@ -106,7 +102,7 @@
 
             // Verifica se o usuário digitou um email completo ou apenas um nome de usuário
             if (userInput.includes('@')) {
-                email = userInput;
+                email = userInput; // Usa o email completo que o usuário digitou
             } else {
                 // Constrói o email com o domínio padrão
                 email = `${userInput.toLowerCase()}@njl.com`;

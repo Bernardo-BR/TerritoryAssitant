@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciar Hierarquia - SUNRISE</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Fontes -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -21,14 +19,11 @@
 </head>
 <body class="bg-gray-100">
 
-    <!-- Tela de Carregamento/Verificação -->
     <div id="auth-loading-screen" class="flex items-center justify-center h-screen">
         <p class="text-gray-500 text-xl font-semibold">Verificando autorização...</p>
     </div>
 
-    <!-- Conteúdo Principal (inicialmente oculto) -->
     <div id="main-content" class="hidden">
-        <!-- Cabeçalho -->
         <header class="bg-white shadow-md">
             <div class="container mx-auto px-6 py-4 flex justify-between items-center">
                 <a href="dashboard.html" title="Voltar para o Dashboard">
@@ -38,7 +33,6 @@
             </div>
         </header>
 
-        <!-- Lista de Usuários -->
         <main class="container mx-auto px-6 py-12">
             <div class="bg-white p-6 rounded-2xl shadow-lg">
                 <div class="border-b border-gray-200 pb-4 mb-4">
@@ -50,17 +44,14 @@
                     </p>
                 </div>
                 <div id="user-list" class="space-y-4">
-                    <!-- Usuários serão inseridos aqui -->
-                </div>
+                    </div>
             </div>
         </main>
     </div>
     
-    <!-- Modal de Alerta -->
     <div id="alert-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
 
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-auth.js";
@@ -125,7 +116,7 @@
                 
                 users.forEach(userData => {
                     const userDiv = document.createElement('div');
-                    userDiv.className = 'flex items-center justify-between p-4 border-b border-gray-200 last:border-b-0';
+                    userDiv.className = 'flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-gray-200 last:border-b-0 gap-4';
                     
                     const emailDisplay = userData.email 
                         ? `<p class="font-semibold text-gray-800">${userData.email}</p>`
@@ -133,10 +124,10 @@
                            <p class="text-xs text-red-500">Verifique o documento com ID: ${userData.id}</p>`;
 
                     userDiv.innerHTML = `
-                        <div>
+                        <div class="flex-grow">
                             ${emailDisplay}
                         </div>
-                        <div>
+                        <div class="w-full sm:w-auto">
                             <select class="role-select bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" data-uid="${userData.id}">
                                 <option value="admin" ${userData.role === 'admin' ? 'selected' : ''}>Admin</option>
                                 <option value="supervisor" ${userData.role === 'supervisor' ? 'selected' : ''}>Supervisor</option>

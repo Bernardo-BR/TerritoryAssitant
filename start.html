@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Saídas de Campo - SUNRISE</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Fontes -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -21,14 +19,11 @@
 </head>
 <body class="bg-gray-100">
 
-    <!-- Tela de Carregamento/Verificação -->
     <div id="auth-loading-screen" class="flex items-center justify-center h-screen">
         <p class="text-gray-500 text-xl font-semibold">Verificando autorização...</p>
     </div>
 
-    <!-- Conteúdo Principal (inicialmente oculto) -->
     <div id="main-content" class="hidden">
-        <!-- Cabeçalho -->
         <header class="bg-white shadow-md">
             <div class="container mx-auto px-6 py-4 flex justify-between items-center">
                 <a href="dashboard.html" title="Voltar para o Dashboard">
@@ -38,19 +33,15 @@
             </div>
         </header>
 
-        <!-- Lista de Dias da Semana -->
         <main class="container mx-auto px-6 py-12">
             <div id="days-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Cards dos dias serão inseridos aqui -->
-            </div>
+                </div>
         </main>
     </div>
     
-    <!-- Modal de Alerta -->
     <div id="alert-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
 
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-auth.js";

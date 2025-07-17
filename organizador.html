@@ -5,24 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciador de Territórios e Mapas com Firebase</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Leaflet.js CSS e JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
-    <!-- Leaflet.draw Plugin CSS e JS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
-    <!-- Leaflet-Omnivore (Para importar KML/KMZ) -->
     <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js'></script>
 
-    <!-- JSZip (Para descompactar arquivos KMZ) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-    <!-- Fontes -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -34,19 +28,32 @@
         .modal-backdrop { transition: opacity 0.3s ease; }
         .modal-content { transition: transform 0.3s ease; }
         .leaflet-draw-toolbar { z-index: 1011 !important; }
+        
+        /* Layout responsivo */
+        @media (max-width: 1024px) {
+            #main-content {
+                flex-direction: column;
+                height: auto;
+            }
+            aside {
+                width: 100%;
+                height: auto;
+                max-height: 50vh; /* Limita a altura em telas menores */
+            }
+            main {
+                height: 70vh; /* Altura fixa para o mapa */
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <!-- Tela de Carregamento/Verificação -->
     <div id="auth-loading-screen" class="flex items-center justify-center h-screen">
         <p class="text-gray-500 text-xl font-semibold">Verificando autorização...</p>
     </div>
 
-    <!-- Conteúdo Principal (inicialmente oculto) -->
-    <div id="main-content" class="hidden h-screen">
-        <!-- Barra Lateral -->
-        <aside class="w-80 bg-white shadow-lg flex flex-col flex-shrink-0 h-full">
+    <div id="main-content" class="hidden h-screen lg:flex">
+        <aside class="w-full lg:w-80 bg-white shadow-lg flex flex-col flex-shrink-0 h-full">
             <div class="flex items-center justify-between p-4 border-b border-gray-200">
                 <h1 class="text-xl font-bold text-gray-700">
                     <a href="dashboard.html" title="Voltar para o Dashboard">
@@ -67,10 +74,9 @@
             </div>
         </aside>
 
-        <!-- Área Principal -->
         <main class="flex-1 flex flex-col p-4 gap-4 relative">
             <header class="bg-white p-4 rounded-lg shadow-sm flex items-center justify-between">
-                <h2 id="current-territory-name" class="text-2xl font-semibold text-gray-800">Selecione um Território</h2>
+                <h2 id="current-territory-name" class="text-lg sm:text-2xl font-semibold text-gray-800 truncate">Selecione um Território</h2>
             </header>
             <div id="map-container" class="flex-1 bg-white rounded-lg shadow-sm p-1 relative">
                 <div id="map"></div>
@@ -102,12 +108,10 @@
         </main>
     </div>
 
-    <!-- Modals -->
     <div id="alert-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
     <div id="name-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
     <div id="confirm-modal" class="fixed inset-0 z-[1050] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden"></div>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-auth.js";
@@ -541,8 +545,7 @@
                     // Usuário é admin, carregar a aplicação
                     loadingScreen.classList.add('hidden');
                     mainContent.classList.remove('hidden');
-                    mainContent.classList.add('flex'); // Garante que o layout flex seja aplicado
-
+                    
                     initMap();
                 
                     document.getElementById('add-territory-btn').addEventListener('click', handleAddTerritory);

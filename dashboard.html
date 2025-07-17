@@ -25,99 +25,99 @@
     <div id="dashboard-content" class="hidden">
         <!-- Cabeçalho -->
         <header class="bg-white shadow-md">
-            <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="container mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
                 <div class="flex items-center">
-                    <img src="https://i.ibb.co/1G7Py7TT/SUNRISE.png" alt="SUNRISE Logo" class="h-12 w-auto">
+                    <img src="https://i.ibb.co/1G7Py7TT/SUNRISE.png" alt="SUNRISE Logo" class="h-10 sm:h-12 w-auto">
                 </div>
-                <div class="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border">
-                    <button id="change-password-btn" class="flex items-center px-3 py-2 font-semibold text-yellow-600 hover:bg-yellow-100 rounded-md transition-colors duration-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <div class="flex items-center gap-2 bg-gray-50 p-1 sm:p-2 rounded-lg border">
+                    <button id="change-password-btn" class="flex items-center px-2 sm:px-3 py-2 font-semibold text-yellow-600 hover:bg-yellow-100 rounded-md transition-colors duration-300 text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 sm:mr-2" viewBox="0 0 20 20" fill="currentColor">
                           <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" />
                         </svg>
-                        Alterar Senha
+                        <span class="hidden sm:inline">Alterar Senha</span>
                     </button>
-                    <button id="logout-btn" class="flex items-center px-3 py-2 font-semibold text-red-600 hover:bg-red-100 rounded-md transition-colors duration-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <button id="logout-btn" class="flex items-center px-2 sm:px-3 py-2 font-semibold text-red-600 hover:bg-red-100 rounded-md transition-colors duration-300 text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
-                        Sair
+                         <span class="hidden sm:inline">Sair</span>
                     </button>
                 </div>
             </div>
         </header>
 
         <!-- Conteúdo Principal -->
-        <main class="container mx-auto px-6 py-12 text-center">
-            <h1 id="greeting" class="text-4xl font-bold text-gray-800"></h1>
+        <main class="container mx-auto px-4 sm:px-6 py-8 sm:py-12 text-center">
+            <h1 id="greeting" class="text-2xl sm:text-4xl font-bold text-gray-800"></h1>
             
             <!-- Botões de Navegação -->
-            <div id="nav-buttons" class="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div id="nav-buttons" class="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 <!-- Organizador -->
-                <a id="btn-organizador" href="organizador.html" class="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
-                    <div class="mx-auto bg-blue-100 rounded-full h-20 w-20 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <a id="btn-organizador" href="organizador.html" class="group bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
+                    <div class="mx-auto bg-blue-100 rounded-full h-16 w-16 sm:h-20 sm:w-20 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 sm:h-10 sm:w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                         </svg>
                     </div>
-                    <h3 class="mt-6 text-xl font-semibold text-gray-800">Organizador</h3>
-                    <p class="mt-2 text-gray-500">Gerenciar territórios e mapas.</p>
+                    <h3 class="mt-5 text-lg sm:text-xl font-semibold text-gray-800">Organizador</h3>
+                    <p class="mt-1 text-sm text-gray-500">Gerenciar territórios e mapas.</p>
                 </a>
                 
                 <!-- Editar Saídas de Campo -->
-                <a id="btn-editar-saidas" href="start.html" class="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
-                    <div class="mx-auto bg-indigo-100 rounded-full h-20 w-20 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <a id="btn-editar-saidas" href="start.html" class="group bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
+                    <div class="mx-auto bg-indigo-100 rounded-full h-16 w-16 sm:h-20 sm:w-20 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 sm:h-10 sm:w-10 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                     </div>
-                    <h3 class="mt-6 text-xl font-semibold text-gray-800">Editar Saídas</h3>
-                    <p class="mt-2 text-gray-500">Ajustar os locais de saída.</p>
+                    <h3 class="mt-5 text-lg sm:text-xl font-semibold text-gray-800">Editar Saídas</h3>
+                    <p class="mt-1 text-sm text-gray-500">Ajustar os locais de saída.</p>
                 </a>
 
                 <!-- Designar Mapas -->
-                <a id="btn-designar" href="send.html" class="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
-                    <div class="mx-auto bg-green-100 rounded-full h-20 w-20 flex items-center justify-center">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <a id="btn-designar" href="send.html" class="group bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
+                    <div class="mx-auto bg-green-100 rounded-full h-16 w-16 sm:h-20 sm:w-20 flex items-center justify-center">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 sm:h-10 sm:w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                         </svg>
                     </div>
-                    <h3 class="mt-6 text-xl font-semibold text-gray-800">Designar Mapas</h3>
-                    <p class="mt-2 text-gray-500">Enviar mapas para equipes.</p>
+                    <h3 class="mt-5 text-lg sm:text-xl font-semibold text-gray-800">Designar Mapas</h3>
+                    <p class="mt-1 text-sm text-gray-500">Enviar mapas para equipes.</p>
                 </a>
                 
                 <!-- Ver Designação -->
-                <a id="btn-ver" href="get.html" class="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
-                    <div class="mx-auto bg-yellow-100 rounded-full h-20 w-20 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <a id="btn-ver" href="get.html" class="group bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
+                    <div class="mx-auto bg-yellow-100 rounded-full h-16 w-16 sm:h-20 sm:w-20 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 sm:h-10 sm:w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                     </div>
-                    <h3 class="mt-6 text-xl font-semibold text-gray-800">Ver Designação</h3>
-                    <p class="mt-2 text-gray-500">Acompanhar status dos mapas.</p>
+                    <h3 class="mt-5 text-lg sm:text-xl font-semibold text-gray-800">Ver Designação</h3>
+                    <p class="mt-1 text-sm text-gray-500">Acompanhar status dos mapas.</p>
                 </a>
 
                 <!-- Mapa Geral -->
-                <a id="btn-mapa-geral" href="map-full.html" class="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
-                    <div class="mx-auto bg-red-100 rounded-full h-20 w-20 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <a id="btn-mapa-geral" href="map-full.html" class="group bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
+                    <div class="mx-auto bg-red-100 rounded-full h-16 w-16 sm:h-20 sm:w-20 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 sm:h-10 sm:w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                     </div>
-                    <h3 class="mt-6 text-xl font-semibold text-gray-800">Mapa Geral</h3>
-                    <p class="mt-2 text-gray-500">Visualizar todos os territórios.</p>
+                    <h3 class="mt-5 text-lg sm:text-xl font-semibold text-gray-800">Mapa Geral</h3>
+                    <p class="mt-1 text-sm text-gray-500">Visualizar todos os territórios.</p>
                 </a>
 
                 <!-- Gerenciar Usuários -->
-                <a id="btn-gerenciar-usuarios" href="hierarchy.html" class="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
-                    <div class="mx-auto bg-gray-100 rounded-full h-20 w-20 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <a id="btn-gerenciar-usuarios" href="hierarchy.html" class="group bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hidden">
+                    <div class="mx-auto bg-gray-100 rounded-full h-16 w-16 sm:h-20 sm:w-20 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 sm:h-10 sm:w-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                     </div>
-                    <h3 class="mt-6 text-xl font-semibold text-gray-800">Gerenciar Hierarquia</h3>
-                    <p class="mt-2 text-gray-500">Definir permissões e acessos.</p>
+                    <h3 class="mt-5 text-lg sm:text-xl font-semibold text-gray-800">Gerenciar Hierarquia</h3>
+                    <p class="mt-1 text-sm text-gray-500">Definir permissões e acessos.</p>
                 </a>
             </div>
         </main>
